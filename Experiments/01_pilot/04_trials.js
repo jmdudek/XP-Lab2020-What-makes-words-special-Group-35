@@ -48,6 +48,7 @@ const create_trials = function(index_beginning, index_end) {
         sound_instance: get_auditory_cue_instance(sounds[i]),
         sound_type: get_auditory_cue_type(sounds[i]),
         congruency: get_congruency(get_category_of_image(images[index_match]), get_instance_of_image(images[index_match]), get_auditory_cue_category(sounds[i]), get_auditory_cue_instance(sounds[i]), get_auditory_cue_type(sounds[i])),
+        match: "match",
       };
       trials.push(trial);
       var trial = {
@@ -65,6 +66,7 @@ const create_trials = function(index_beginning, index_end) {
         sound_instance: get_auditory_cue_instance(sounds[i]),
         sound_type: get_auditory_cue_type(sounds[i]),
         congruency: get_congruency(get_category_of_image(images[index_mismatch]), get_instance_of_image(images[index_mismatch]), get_auditory_cue_category(sounds[i]), get_auditory_cue_instance(sounds[i]), get_auditory_cue_type(sounds[i])),
+        match: "mismatch",
       };
       trials.push(trial);
     };
@@ -91,6 +93,7 @@ const create_test_trials = function(arr_of_indices_match, arr_of_indices_mismatc
       sound_instance: get_auditory_cue_instance(sounds[i]),
       sound_type: get_auditory_cue_type(sounds[i]),
       congruency: get_congruency(get_category_of_image(images[index_match]), get_instance_of_image(images[index_match]), get_auditory_cue_category(sounds[i]), get_auditory_cue_instance(sounds[i]), get_auditory_cue_type(sounds[i])),
+      match: "match",
     };
     trials.push(trial);
   });
@@ -111,6 +114,7 @@ const create_test_trials = function(arr_of_indices_match, arr_of_indices_mismatc
       sound_instance: get_auditory_cue_instance(sounds[i]),
       sound_type: get_auditory_cue_type(sounds[i]),
       congruency: get_congruency(get_category_of_image(images[index_mismatch]), get_instance_of_image(images[index_mismatch]), get_auditory_cue_category(sounds[i]), get_auditory_cue_instance(sounds[i]), get_auditory_cue_type(sounds[i])),
+      match: "mismatch",
     };
     trials.push(trial);
   });
