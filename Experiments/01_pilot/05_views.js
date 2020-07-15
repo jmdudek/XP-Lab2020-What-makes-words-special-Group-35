@@ -41,16 +41,16 @@ const instructions = magpieViews.view_generator("instructions", {
   trials: 1,
   name: 'instructions',
   title: 'General Instructions',
-  text: `In this experiment you will be hearing auditory cues after which an image will appear.
-            On each trial you will first see a fixation cross in the middel of the screen, which will indicate that the next trial is about to start.
+  text: `In this experiment, you will be hearing auditory cues after which an image will appear.
+            On each trial, you will first see a fixation cross in the middle of the screen, which will indicate that the next trial is about to start.
             Please <b>focus on this cross</b> at the beginning of each trial.
             <br />
             <br />
-            After the cross dissapears an auditory cue (either the spoken word or an environmental sound) will be played automatically, so <b>make sure that your speakers or headphones are turned on</b>.
+            After the cross disappears an auditory cue (either the spoken word or an environmental sound) will be played automatically, so <b>make sure that your speakers or headphones are turned on</b>.
             Shortly after the auditory cue an image will appear in the center of the screen.
-            Your task will be to determine for each picture whether or not the sound you heard belongs to the same basic level category as depicted in the the image.
+            Your task will be to determine for each picture whether or not the sound you heard belongs to the same basic level category as depicted in the image.
             <br />
-            Same basic level category means e.g. you hear a dog barking or a person saying the word "dog" and after that an image of a dog appears, so the sounds match with the image.
+            Same basic level category means e.g. you hear a dog barking or a person saying the word "dog" and after that, an image of a dog appears, so the sounds match with the image.
             <br />
             <br />
             You should <b>indicate your decision</b> by either <b>pressing the "q" or "p" button</b> on your keyboard.
@@ -66,9 +66,9 @@ const instructions = magpieViews.view_generator("instructions", {
             for example: "cellphone ring" or "phone" followed by a dog (different basic level category)
             <br />
             <br />
-            First you will go through 6 practice trials to familiarise yourself with the task.
+            First, you will go through 6 practice trials to familiarise yourself with the task.
             <br />
-            After that a second instructions screen will show up to notify you that the main trials are about to begin.
+            After that, a second instructions screen will show up to notify you that the main trials are about to begin.
             <br />
             <br />
             Please be as <b>fast</b> and <b>accurate</b> as you can.`,
