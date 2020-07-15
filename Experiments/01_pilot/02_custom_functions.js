@@ -182,7 +182,7 @@ iter = iter + 1;
 
 //adds additional delay
 const add_delay = function(data, next){
-  setTimeout(function(){next();}, 2250);
+  setTimeout(function(){next();}, 2000);
 };
 
 /* Generators for custom view templates, answer container elements and enable response functions
