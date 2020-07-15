@@ -126,5 +126,5 @@ const random_indices_mismatch = generateRandomArray(3);
 
 const trial_info = {
   training_images: create_test_trials(random_indices_match, random_indices_mismatch),
-  main_images: create_trials(0,1),
+  main_images: create_trials(0,24),
 };
