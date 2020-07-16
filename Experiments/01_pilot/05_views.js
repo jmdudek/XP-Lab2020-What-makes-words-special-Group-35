@@ -58,12 +58,12 @@ const instructions = magpieViews.view_generator("instructions", {
             <br />
             <b>"q"</b> indicates a <b>yes</b> response
             <br />
-            for example: "any cellphone ring" or "phone" followed by a picture of any phone (same basic level category)
+            for example: "<b>any</b> cellphone ring" or "phone" followed by a picture of <b>any</b> phone (same basic level category)
             <br />
             <br />
             <b>"p"</b> indicates a <b>no</b> response
             <br />
-            for example: "any cellphone ring" or "phone" followed by a dog (different basic level category)
+            for example: "<b>any</b> cellphone ring" or "phone" followed by <b>any</b> dog (different basic level category)
             <br />
             <br />
             First, you will go through 6 practice trials to familiarise yourself with the task.
