@@ -50,7 +50,7 @@ const instructions = magpieViews.view_generator("instructions", {
             Shortly after the auditory cue an image will appear in the center of the screen.
             Your task will be to determine for each picture whether or not the sound you heard belongs to the same basic level category as depicted in the image.
             <br />
-            Same basic level category means e.g. you hear a dog barking or a person saying the word "dog" and after that, an image of a dog appears, so the sounds match with the image.
+            Same basic level category means e.g. you hear any dog barking or a person saying the word "dog" and after that, an image of any dog appears, so the sounds match with the image.
             <br />
             <br />
             You should <b>indicate your decision</b> by either <b>pressing the "q" or "p" button</b> on your keyboard.
@@ -58,12 +58,12 @@ const instructions = magpieViews.view_generator("instructions", {
             <br />
             <b>"q"</b> indicates a <b>yes</b> response
             <br />
-            for example: "cellphone ring" or "phone" followed by a picture of any phone (same basic level category)
+            for example: "any cellphone ring" or "phone" followed by a picture of any phone (same basic level category)
             <br />
             <br />
             <b>"p"</b> indicates a <b>no</b> response
             <br />
-            for example: "cellphone ring" or "phone" followed by a dog (different basic level category)
+            for example: "any cellphone ring" or "phone" followed by a dog (different basic level category)
             <br />
             <br />
             First, you will go through 6 practice trials to familiarise yourself with the task.
