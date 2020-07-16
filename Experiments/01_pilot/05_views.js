@@ -58,12 +58,12 @@ const instructions = magpieViews.view_generator("instructions", {
             <br />
             <b>"q"</b> indicates a <b>yes</b> response. Example:
             <br />
-            Environmental Sound: "<b>any</b> phone's ringtone" or Spoken Word: "phone" followed by <b>any</b> picture of a phone =>  same basic level category
+            Sound: "<b>any</b> phone's ringtone" or Spoken Word: "phone" followed by <b>any</b> picture of a phone =>  same basic level category
             <br />
             <br />
             <b>"p"</b> indicates a <b>no</b> response. Example:
             <br />
-            Environmental Sound: "<b>any</b> phone's ringtone" or Spoken Word: "phone" followed by <b>any</b> picture of a dog => different basic level category
+            Sound: "<b>any</b> phone's ringtone" or Spoken Word: "phone" followed by <b>any</b> picture of a dog => different basic level category
             <br />
             <br />
             First, you will go through 6 practice trials to familiarise yourself with the task.
