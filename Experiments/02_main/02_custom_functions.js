@@ -143,13 +143,13 @@ check_response = function(data, next){
           alert("Correct!");
         }
         if (e.keyCode == 112) {
-          alert("Incorrect!");
+          alert("Incorrect! The sound and the picture stem from the same basic level category.");
         }
       }
       if (iter > 3 && iter <= 6) {
         //console.log("yes");
         if (e.keyCode == 113) {
-          alert("Incorrect!");
+          alert("Incorrect! The sound and the picture stem from different basic level categories.");
         }
         if (e.keyCode == 112) {
           alert("Correct!");
