@@ -77,43 +77,45 @@ const create_trials = function(index_beginning, index_end) {
 const create_test_trials = function(arr_of_indices_match, arr_of_indices_mismatch) {
   const trials = [];
   arr_of_indices_match.forEach(i => {
-    index_match = get_matching_image_index(match[i][1]);
+    index_match = i[1];
+    index_sound = i[0];
     var trial = {
-      audio: 'stimuli/sounds/' + sounds[i],
+      audio: 'stimuli/sounds/' + sounds[index_sound],
       picture: 'stimuli/images/' + images[index_match],
       key1: 'q',
       key2: 'p',
       q: 'yes',
       p: 'no',
-      expected: get_expected(get_category_of_image(images[index_match]), get_auditory_cue_category(sounds[i])),
+      expected: get_expected(get_category_of_image(images[index_match]), get_auditory_cue_category(sounds[index_sound])),
       image_category: get_category_of_image(images[index_match]),
       image_instance: get_instance_of_image(images[index_match]),
       number_of_image: get_number_of_image(images[index_match]),
-      sound_category:get_auditory_cue_category(sounds[i]),
-      sound_instance: get_auditory_cue_instance(sounds[i]),
-      sound_type: get_auditory_cue_type(sounds[i]),
-      congruency: get_congruency(get_category_of_image(images[index_match]), get_instance_of_image(images[index_match]), get_auditory_cue_category(sounds[i]), get_auditory_cue_instance(sounds[i]), get_auditory_cue_type(sounds[i])),
+      sound_category:get_auditory_cue_category(sounds[index_sound]),
+      sound_instance: get_auditory_cue_instance(sounds[index_sound]),
+      sound_type: get_auditory_cue_type(sounds[index_sound]),
+      congruency: get_congruency(get_category_of_image(images[index_match]), get_instance_of_image(images[index_match]), get_auditory_cue_category(sounds[index_sound]), get_auditory_cue_instance(sounds[index_sound]), get_auditory_cue_type(sounds[index_sound])),
       match: "match",
     };
     trials.push(trial);
   });
   arr_of_indices_mismatch.forEach(i => {
-    index_mismatch = get_mismatching_image_index(match[i][1]);
+    index_mismatch = i[1];
+    index_sound = i[0];
     var trial = {
-      audio: 'stimuli/sounds/' + sounds[i],
+      audio: 'stimuli/sounds/' + sounds[index_sound],
       picture: 'stimuli/images/' + images[index_mismatch],
       key1: 'q',
       key2: 'p',
       q: 'yes',
       p: 'no',
-      expected: get_expected(get_category_of_image(images[index_mismatch]), get_auditory_cue_category(sounds[i])),
+      expected: get_expected(get_category_of_image(images[index_mismatch]), get_auditory_cue_category(sounds[index_sound])),
       image_category: get_category_of_image(images[index_mismatch]),
       image_instance: get_instance_of_image(images[index_mismatch]),
       number_of_image: get_number_of_image(images[index_mismatch]),
-      sound_category:get_auditory_cue_category(sounds[i]),
-      sound_instance: get_auditory_cue_instance(sounds[i]),
-      sound_type: get_auditory_cue_type(sounds[i]),
-      congruency: get_congruency(get_category_of_image(images[index_mismatch]), get_instance_of_image(images[index_mismatch]), get_auditory_cue_category(sounds[i]), get_auditory_cue_instance(sounds[i]), get_auditory_cue_type(sounds[i])),
+      sound_category:get_auditory_cue_category(sounds[index_sound]),
+      sound_instance: get_auditory_cue_instance(sounds[index_sound]),
+      sound_type: get_auditory_cue_type(sounds[index_sound]),
+      congruency: get_congruency(get_category_of_image(images[index_mismatch]), get_instance_of_image(images[index_mismatch]), get_auditory_cue_category(sounds[index_sound]), get_auditory_cue_instance(sounds[index_sound]), get_auditory_cue_type(sounds[index_sound])),
       match: "mismatch",
     };
     trials.push(trial);
@@ -121,8 +123,8 @@ const create_test_trials = function(arr_of_indices_match, arr_of_indices_mismatc
   return trials;
 };
 
-const random_indices_match = generateRandomArray(3);
-const random_indices_mismatch = generateRandomArray(3);
+const random_indices_match = [[10,8],[0,2],[11,8]];
+const random_indices_mismatch = [[18,1],[21,5],[7,19]];
 
 const trial_info = {
   training_images: create_test_trials(random_indices_match, random_indices_mismatch),
