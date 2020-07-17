@@ -10,14 +10,3 @@ The experiment uses a 2 (cue type: label, sound) x 2 (match: same, different) x 
 
 Participants view 144 images of different instances of various basic level categories each after hearing either a spoken form or an environmental sound from a certain category.
 They should respond (forced binary choice) whether the instance depicted in the images belong to the same basic level category as the sound they just heard before.
-
-
-## \_magpie
-
-This experiment was built using [\_magpie](https://magpie-ea.github.io/magpie-site/index.html).
-
-## Running the experiment
-
-1. Online Link: [here](https://what-makes-words-special-group35.netlify.app/)
-
-2. Offline: Clone the repository, run `npm install` and open `index.html`.
