@@ -3,19 +3,14 @@
 
 
 /** Wrapping views below
-
 * Obligatory properties
-
     * trials: int - the number of trials this view will appear
     * name: string
-
 *Optional properties
     * buttonText: string - the text on the button (default: 'next')
     * text: string - the text to be displayed in this view
     * title: string - the title of this view
-
     * More about the properties and functions of the wrapping views - https://magpie-ea.github.io/magpie-docs/01_designing_experiments/01_template_views/#wrapping-views
-
 */
 
 // Every experiment should start with an intro view. Here you can welcome your participants and tell them what the experiment is about
@@ -46,24 +41,24 @@ const instructions = magpieViews.view_generator("instructions", {
             Please <b>focus on this cross</b> at the beginning of each trial.
             <br />
             <br />
-            After the cross disappears an auditory cue (either a spoken word or an environmental sound) will be played automatically, so <b>make sure that your speakers or headphones are turned on</b>.
+            After the cross disappears an auditory cue (either the spoken word or an environmental sound) will be played automatically, so <b>make sure that your speakers or headphones are turned on</b>.
             Shortly after the auditory cue an image will appear in the center of the screen.
-            Your task will be to determine for each round whether or not the sound you heard belongs to the same basic level category as the image that is being displayed.
+            Your task will be to determine for each picture whether or not the sound you heard belongs to the same basic level category as depicted in the image.
             <br />
-            Same basic level category means e.g. you hear <b>any</b> dog barking or a person saying the word "dog". After that, an image of <b>any</b> dog appears, so the sounds match with the image.
+            Same basic level category means e.g. you hear any dog barking or a person saying the word "dog" and after that, an image of any dog appears, so the sounds match with the image.
             <br />
             <br />
             You should <b>indicate your decision</b> by either <b>pressing the "q" or "p" button</b> on your keyboard.
             <br />
             <br />
-            <b>"q"</b> indicates a <b>yes</b> response. Example:
+            <b>"q"</b> indicates a <b>yes</b> response
             <br />
-            Sound: "<b>any</b> phone's ringtone" or Spoken Word: "phone" followed by <b>any</b> picture of a phone =>  same basic level category
+            for example: "any cellphone ring" or "phone" followed by a picture of any phone (same basic level category)
             <br />
             <br />
-            <b>"p"</b> indicates a <b>no</b> response. Example:
+            <b>"p"</b> indicates a <b>no</b> response
             <br />
-            Sound: "<b>any</b> phone's ringtone" or Spoken Word: "phone" followed by <b>any</b> picture of a dog => different basic level category
+            for example: "any cellphone ring" or "phone" followed by a dog (different basic level category)
             <br />
             <br />
             First, you will go through 6 practice trials to familiarise yourself with the task.
@@ -127,24 +122,18 @@ const thanks = magpieViews.view_generator("thanks", {
 });
 
 /** trial (magpie's Trial Type Views) below
-
 * Obligatory properties
-
     - trials: int - the number of trials this view will appear
     - name: string - the name of the view type as it shall be known to _magpie (e.g. for use with a progress bar)
             and the name of the trial as you want it to appear in the submitted data
     - data: array - an array of trial objects
-
 * Optional properties
-
     - pause: number (in ms) - blank screen before the fixation point or stimulus show
     - fix_duration: number (in ms) - blank screen with fixation point in the middle
     - stim_duration: number (in ms) - for how long to have the stimulus on the screen
       More about trial life cycle - https://magpie-ea.github.io/magpie-docs/01_designing_experiments/04_lifecycles_hooks/
-
     - hook: object - option to hook and add custom functions to the view
       More about hooks - https://magpie-ea.github.io/magpie-docs/01_designing_experiments/04_lifecycles_hooks/
-
 * All about the properties of trial views
 * https://magpie-ea.github.io/magpie-docs/01_designing_experiments/01_template_views/#trial-views
 */
