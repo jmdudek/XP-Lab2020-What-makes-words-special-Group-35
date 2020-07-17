@@ -1,4 +1,4 @@
-# Mental Rotation Task
+# MActivation of basic level categories in the human brain based on different cue types. 
 
 This repository contains an auditory cue task based on the experiment by Edminston & Lupyan (2015).
 
