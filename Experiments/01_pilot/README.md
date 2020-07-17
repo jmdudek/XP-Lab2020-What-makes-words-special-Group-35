@@ -18,6 +18,6 @@ This experiment was built using [\_magpie](https://magpie-ea.github.io/magpie-si
 
 ## Running the experiment
 
-1. Online Link: [here](https://xp-lab2020-what-makes-words-special-group-35.netlify.app)
+1. Online Link: inactive
 
 2. Offline: Clone the repository, run `npm install` and open `index.html`.
