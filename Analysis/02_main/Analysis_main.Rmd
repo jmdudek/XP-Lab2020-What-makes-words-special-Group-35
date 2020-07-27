@@ -205,7 +205,7 @@ data_hypothesis4 <- data_agg2 %>%
 # Hypothesis-driven plots
 
 ## Plot for first Hypothesis
-```{r, fig.align=, fig.height=9, fig.width=9}
+```{r, fig.align="center", fig.height=9, fig.width=9}
 # creating data set for our first hypothesis
 data_hypothesis1 <- data_agg %>% 
   #filter(image_category != "dog") %>% 
