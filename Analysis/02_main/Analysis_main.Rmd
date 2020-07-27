@@ -1,0 +1,960 @@
+---
+title: "Analysis Script - Activation of basic-level categories in the human brain based on different cue types."
+author: "Group35"
+date: "24 7 2020"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    highlight: tango
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, error = F, message = F, warning = F)
+
+```
+
+```{r libraries, include=FALSE, message=FALSE, warning=FALSE}
+
+# package for convenience functions (e.g. ggplot2, dplyr, etc.)
+library(tidyverse)
+
+# package for Bayesian regression modeling
+library(brms)
+
+# package for visualization
+library(tidybayes)
+
+# package to visualize 
+library(bayesplot)
+
+# package to extract HDIs
+library(HDInterval)
+
+# these options help Stan run faster
+options(mc.cores = parallel::detectCores())
+
+# communication with Stan
+library(rstan)
+
+# nice theme for our plots
+library(aida)
+
+# use the aida-theme for plotting
+theme_set(theme_aida())
+
+# global color scheme / non-optimized
+project_colors = c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#000000")
+
+# setting theme colors globally
+scale_colour_discrete <- function(...) {
+  scale_colour_manual(..., values = project_colors)
+}
+scale_fill_discrete <- function(...) {
+   scale_fill_manual(..., values = project_colors)
+}
+
+```
+
+# Data Wrangling
+```{r load_in_data}
+# importing data from our _magpie experiment
+data <- read_csv("main_data.csv")
+
+```
+
+```{r}
+# creating data frame that we are going to work with in our analysis
+data_agg <- data %>% 
+  # filtering for all matching, main trials in which the subjects gave correct answers
+  filter(trial_name == "main", correctness == 'correct', match == 'match') %>% 
+  # selecting the columns that are needed for analysis
+  select(submission_id, RT, sound_type, congruency, sound_instance, image_category, image_instance, number_of_image) %>% 
+  # renaming columns for simplicity
+  rename('cue_type' = sound_type, "subject_id" = submission_id, "category" = image_category) %>% 
+  # substracting 2250ms from each RT measurement (the time that goes by before the participants can give their answer).
+  # detailed reasoning for this can be found in our preregistration
+  mutate(RT = RT-2250) %>% 
+  # filtering out outliers
+  filter(RT<1500 & RT>250)
+
+# taking a look at the new data frame
+head(data_agg)
+```
+
+## Max and Mean Error Rate
+```{r}
+# checking if a subject just guessed/did not understand the task
+data_error <- data %>% 
+  filter(correctness == 'incorrect') %>% 
+  group_by(submission_id, correctness) %>% 
+  count()
+
+# max error rate of all participants is 8% -> no one just guessed to complete the experiment
+max(data_error$n)/150
+print(mean(data_error$n)/150, digits = 4)
+```
+
+Judging by the maximum and mean error rate of all participants we see that everyone performed very accurately (Mean = 96%) and no one was guessing randomly.
+
+
+## Percentage of Outliers
+```{r}
+# data set inluding all outliers
+filtered_with_outliers <- data %>% filter(trial_name == "main", correctness == 'correct', match == 'match') %>% count()
+
+# data set without the outliers
+filtered_without_outliers <- length(data_agg$RT)
+
+# Percentage of outliers in our filtered () data set
+outlier_proportion <- 1-filtered_without_outliers/filtered_with_outliers 
+outlier_proportion
+```
+
+After filtering the data for main, correct and matching trials, reaction times (RTs) shorter than 250 ms. or longer than 1500 ms. were removed (154 trials removed, 6,46% of total).
+
+## Log transformation of RT
+```{r, fig.align= "center", fig.height=6, fig.width=8}
+# log transform RT 
+data_agg$RT_log <- log(data_agg$RT)
+
+# plot the regular RT values as a density
+data_agg %>%
+  ggplot() +
+  geom_density(aes(x = RT), color = "lightblue", fill = "lightblue", alpha = 0.3) +
+  labs(
+    title = "Density plot for untransformed RT values",
+    y = "Density \n",
+    x = "\n Reaction Times (RT)"
+  )
+ 
+# plot the log transformed RT
+data_agg %>% 
+  ggplot() +
+  geom_density(aes(x = RT_log), color = "orange", fill = "orange", alpha = 0.3) +
+  labs(
+    title = "Density plot for log transformed RT values",
+    y = "Density \n",
+    x = "\n log Reaction Times (RT)"
+  )
+```
+
+## Checking for major differnces in RT between categories
+```{r, fig.align="center", fig.height=9, fig.width=9}
+# checking if any category exhibits unusual RTs 
+data_agg %>% 
+  ggplot() +
+  geom_density(aes(x = RT_log, color = category, fill = category ), alpha = 0.15) +
+  labs(
+    title = "Density distributions for each basic-level category",
+    y = "Density \n",
+    x = "\n log RT",
+    fill = "Basic-level categories", 
+    color = "Basic-level categories")
+```
+
+## Data sets for each hypothesis
+```{r}
+# creating data set for our first hypothesis
+data_hypothesis1 <- data_agg %>% 
+  #filter(image_category != "dog") %>% 
+  # calculating the mean RT for each cue type (label, sound), to get a first intuition of the differences it RT
+  group_by(cue_type) %>% 
+  mutate(RT_mean = mean(RT_log))
+
+# creating data set for our second hypothesis
+data_hypothesis2 <- data_agg %>% 
+   # calculating the mean RT for congruent and incongruent trials, to get a first intuition of the differences it RT
+  filter(cue_type == 'sound') %>% 
+  group_by(congruency) %>% 
+  mutate(RT_mean = mean(RT_log))
+
+# creating data set for our third hypothesis
+data_hypothesis3 <- data_agg %>% 
+  # calculating the mean RT for congruent and incongruent trials, to get a first intuition of the differences it RT
+  filter(congruency != "incongruent") %>% 
+  group_by(cue_type) %>% 
+  mutate(RT_mean = mean(RT_log))
+
+
+# creating data set for our fourth hypothesis
+data_agg2 <- data %>% 
+  # filtering for all mismatching, main trials in which the subjects gave correct answers
+  filter(trial_name == "main", correctness == 'correct', match == 'mismatch') %>% 
+  # selecting the columns that are needed for analysis
+  select(submission_id, RT, sound_type, congruency, sound_instance, image_category, image_instance, number_of_image) %>% 
+  # renaming columns for simplicity
+  rename('cue_type' = sound_type, "subject_id" = submission_id, "category" = image_category) %>% 
+  # substracting 2250ms from each RT measurement (the time that goes by before the participants can give their answer).
+  # detailed reasoning for this can be found in our preregistration
+  mutate(RT = RT-2250) %>% 
+  # filtering out outliers
+  filter(RT<1500 & RT>250) 
+
+data_agg2$RT_log <- log(data_agg2$RT)
+
+
+data_hypothesis4 <- data_agg2 %>% 
+  # calculating the mean RT for congruent and incongruent trials, to get a first intuition of the differences it RT
+  group_by(cue_type) %>% 
+  mutate(RT_mean = mean(RT_log))
+```
+
+
+# Hypothesis-driven plots
+
+## Plot for first Hypothesis
+```{r, fig.align=, fig.height=9, fig.width=9}
+# creating data set for our first hypothesis
+data_hypothesis1 <- data_agg %>% 
+  #filter(image_category != "dog") %>% 
+  # calculating the mean RT for each cue type (label, sound), to get a first intuition of the differences it RT
+  group_by(cue_type) %>% 
+  mutate(RT_mean = mean(RT_log))
+
+# Density plot for both cue types
+data_hypothesis1 %>% 
+  ggplot() +
+  # adding the density plots and color accordingly
+  geom_density(aes(x = RT_log, color = cue_type, fill = cue_type), alpha = 0.3) +
+  # adding the vertical lines for each condition´s mean reaction time value 
+  # for better distinguishability add for each condition a different color
+  geom_vline(aes(xintercept = RT_mean, color = cue_type, linetype = cue_type)) +
+  # adding infos to the plot 
+  labs( title = "Density plot of log RT values for label and sound cues",
+        subtitle = "with additional mean values",
+        x = "\n log RT",
+        y = "Density\n",
+        fill = "Cue Type", 
+        color = "Cue Type",
+        linetype = "Cue Type"
+       )
+```
+
+## Plot for second Hypothesis
+```{r, fig.align = "center", fig.height=9, fig.width=9}
+
+# creating data set for our second hypothesis
+data_hypothesis2 <- data_agg %>% 
+   # calculating the mean RT for congruent and incongruent trials, to get a first intuition of the differences it RT
+  filter(cue_type == 'sound') %>% 
+  group_by(congruency) %>% 
+  mutate(RT_mean = mean(RT_log))
+
+# Density plot for both cue types
+data_hypothesis2 %>% 
+  ggplot() +
+  # adding the density plots and color accordingly
+  geom_density(aes(x = RT_log, color = congruency, fill = congruency), alpha = 0.3) +
+  # adding the vertical lines for each condition´s mean reaction time value 
+  # for better distinguishability add different colors
+  geom_vline(aes(xintercept = RT_mean, color = congruency, linetype = congruency)) +
+  # adding infos to the plot 
+  labs(title = "Density plot of log RT values for both levels of congruency",
+       subtitle = "with additional mean values",
+       x = "\n log RT",
+       y = "Density\n",
+       fill = "Congruency", 
+       color = "Congruency",
+       linetype = "Congruency"
+       )
+```
+
+## Plot for third Hypothesis
+```{r, fig.align="center", fig.height=9, fig.width=9}
+# creating data set for our first hypothesis
+data_hypothesis3 <- data_agg %>% 
+  filter(congruency != "incongruent") %>% 
+  group_by(cue_type) %>% 
+  mutate(RT_mean = mean(RT_log))
+
+# Density plot for both cue types
+data_hypothesis3 %>% 
+  ggplot() +
+  # adding the density plots and color accordingly
+  geom_density(aes(x = RT_log, color = cue_type, fill = cue_type), alpha = 0.3) +
+  # adding the vertical lines for each condition´s mean reaction time value
+  # for better distinguishability add for each condition a different color
+  geom_vline(aes(xintercept = RT_mean, color = cue_type, linetype = cue_type)) +
+  # adding infos to the plot 
+  labs(title = "Density plot of log RT values for label and congruent sound cues",
+       subtitle = "with additional mean values",
+        x = "\n log RT",
+        y = "Density\n",
+        fill = "Cue Type", 
+        color = "Cue Type",
+        linetype = "Cue Type"
+       )
+```
+
+## Plot for fourth Hypothesis
+```{r, fig.align = "center", fig.height=9, fig.width=9}
+
+# Density plot for both cue types
+data_hypothesis4 %>% 
+  ggplot() +
+  # adding the density plots and color accordingly
+  geom_density(aes(x = RT_log, color = cue_type, fill = cue_type), alpha = 0.3) +
+  # adding the vertical lines for each condition´s mean reaction time value 
+  # for better distinguishability add for each condition a different color
+  geom_vline(aes(xintercept = RT_mean, color = cue_type, linetype = cue_type)) +
+  # adding infos to the plot 
+  labs( title = "Density plot of log RT values for label and sound cues",
+        subtitle = "with additional mean values",
+        x = "\n log RT",
+        y = "Density\n",
+        fill = "Cue Type", 
+        color = "Cue Type",
+        linetype = "Cue Type"
+       )
+```
+
+# Running brm models for hypothesis
+We performed our statistical analysis using R and RStudio and based our inference on mixed effects bayesian linear regression modelling using the R package `brms`.
+For each model we specified maximal random effects that were liscenced by the data. In case the CrI's of the respective random effect included 0, we excluded the RE and compared the resulting model to the previous one via Leave-one-out cross validation (using the `LOO` package). For comparision we always included the model without the random effects structure. Out of all models we then chose the one with the highest ELPD score to perform the hypothesis testing.
+For visualization and data wrangling purposes we made use of the R packages `tidyverse`, `tidybayes`, `bayesplot` and `HDInterval`.
+
+## First hypothesis
+```{r}
+# checking if random effects (intercept and slope) are in theory possible to apply to our second model
+xtabs(~cue_type+subject_id, data_hypothesis1)
+xtabs(~cue_type+category, data_hypothesis1)
+```
+
+
+We will run several brm models for the first hypothesis, so that we can compare their performance later on.
+
+```{r, cache = T}
+# brm model without random effects
+hypo1 <- brm(
+  RT_log ~ cue_type,
+  # data
+  data = data_hypothesis1,
+  # seed
+  seed = 1
+)
+```
+
+```{r, cache = T}
+# brm model with random effects that are licensed by the data
+hypo1_re <- brm(
+  RT_log ~ cue_type + (1 || subject_id) + (cue_type || category),
+  # data
+  data = data_hypothesis1,
+  # seed
+  seed = 1
+)
+```
+
+```{r, cache = T}
+# brm model with maximal random effects that are licensed by the data
+hypo1_max_re <- brm(
+  RT_log ~ cue_type + (cue_type || subject_id) + (cue_type || category),
+  # data
+  data = data_hypothesis1,
+  # seed
+  seed = 1
+)
+```
+
+
+### Model output and fit
+```{r}
+# checking the models output and fit
+hypo1
+pp_check(hypo1)
+```
+
+```{r}
+# checking the models output and fit
+hypo1_re
+pp_check(hypo1_re)
+```
+
+```{r}
+# checking the models output and fit
+hypo1_max_re
+pp_check(hypo1_max_re)
+```
+
+### Model comparison
+```{r}
+#Comparing both models using loo compare
+model1 <- loo(hypo1)
+model1_re <- loo(hypo1_re)
+model1_max_re <- loo(hypo1_max_re)
+loo_comp1 <- loo_compare(list(model1 = model1, model1_re = model1_re, model1_max_re = model1_max_re))
+loo_comp1
+```
+
+```{r}
+#Using the z-test to obtain the p-value such we can judge significance of the loo compare results
+1-pnorm(-loo_comp1[2,1], loo_comp1[2,2])
+1-pnorm(-loo_comp1[2,1], loo_comp1[2,3])
+```
+
+### Visual analysis
+```{r fig.align="center", fig.height=9, fig.width=9}
+# Extract the posteriors
+posteriors <- hypo1_max_re %>%
+  spread_draws(b_Intercept, 
+               b_cue_typesound) %>%
+  # calculate posteriors for each individual level
+  mutate(label = b_Intercept,
+         sound = b_Intercept + b_cue_typesound) %>% 
+  select(label, sound) %>% 
+  gather(key = "parameter", value = "posterior") %>% 
+  group_by(parameter) %>% 
+  summarise(mean_posterior = mean(posterior),
+            `95lowerCrI` = HDInterval::hdi(posterior, credMass = 0.95)[1],
+            `95higherCrI` = HDInterval::hdi(posterior, credMass = 0.95)[2])
+
+
+
+# extract the random intercepts for exemplars
+random_intc_matrix <- ranef(hypo1_max_re)$subject_id[, , "Intercept"] %>% 
+  round(digits = 2) 
+
+# extract the by-exemplar random slopes for group
+random_slope_matrix <- ranef(hypo1_max_re)$subject_id[, , "cue_typesound"] %>% 
+  round(digits = 2)
+
+# random intercepts to dataframe
+random_intc_df <- data.frame(subject_id = row.names(random_intc_matrix), random_intc_matrix) %>% 
+  select(subject_id, Estimate) %>% 
+  rename(rintercept = Estimate)
+
+# combine with random slope matrix
+random_slope_df <- data.frame(subject_id = row.names(random_slope_matrix), random_slope_matrix) %>% 
+  select(subject_id, Estimate) %>% 
+  rename(rslope = Estimate) %>% 
+  full_join(random_intc_df) %>% 
+  # add population parameters and group-specific parameters
+  mutate(label_population = fixef(hypo1_max_re)[1],
+         sound_population = fixef(hypo1_max_re)[1] + fixef(hypo1_max_re)[2],
+         label = rintercept + label_population,
+         sound = rintercept + rslope + sound_population) %>% 
+  select(subject_id, sound, label) %>% 
+  gather(parameter, mean_posterior, -subject_id)
+  
+
+# combine with plot
+ggplot(data = posteriors, 
+       aes(x = parameter, y = mean_posterior,
+           color = parameter, fill = parameter)) + 
+   # add random estimates
+  geom_point(data = random_slope_df, 
+             alpha = 0.4,
+             size = 2,
+             position = position_jitter(width = 0.01)
+             ) +
+  # add lines between random estimates
+  geom_line(data = random_slope_df, 
+            aes(group = subject_id),
+            color = "grey", alpha = 0.3) +
+  # add population-level estimates
+  geom_errorbar(aes(ymin = `95lowerCrI`, ymax = `95higherCrI`),
+                width = 0.2, color = "grey") +
+  geom_line(aes(group = 1), size = 2, color = "black") +
+  geom_point(size = 4, pch = 21, color = "black") +
+  labs(x = "\n Cue Type",
+       y = "Posterior log RT \n",
+       title = "Posterior means for both cue types and their 95% CrI's",
+       subtitle = "with posterior estimates for each subject")
+```
+
+```{r fig.align="center", fig.height=9, fig.width=9}
+# extract the random intercepts for exemplars
+random_intc_matrix <- ranef(hypo1_max_re)$category[, , "Intercept"] %>% 
+  round(digits = 2) 
+
+# extract the by-exemplar random slopes for group
+random_slope_matrix <- ranef(hypo1_max_re)$category[, , "cue_typesound"] %>% 
+  round(digits = 2)
+
+# random intercepts to dataframe
+random_intc_df <- data.frame(category = row.names(random_intc_matrix), random_intc_matrix) %>% 
+  select(category, Estimate) %>% 
+  rename(rintercept = Estimate)
+
+# combine with random slope matrix
+random_slope_df <- data.frame(category = row.names(random_slope_matrix), random_slope_matrix) %>% 
+  select(category, Estimate) %>% 
+  rename(rslope = Estimate) %>% 
+  full_join(random_intc_df) %>% 
+  # add population parameters and group-specific parameters
+  mutate(label_population = fixef(hypo1_max_re)[1],
+         sound_population = fixef(hypo1_max_re)[1] + fixef(hypo1_max_re)[2],
+         label = rintercept + label_population,
+         sound = rintercept + rslope + sound_population) %>% 
+  select(category, sound, label) %>% 
+  gather(parameter, mean_posterior, -category)
+  
+
+# combine with plot
+ggplot(data = posteriors, 
+       aes(x = parameter, y = mean_posterior,
+           color = parameter, fill = parameter)) + 
+   # add random estimates
+  geom_point(data = random_slope_df, 
+             alpha = 0.4,
+             size = 2,
+             position = position_jitter(width = 0.01)
+             ) +
+  # add lines between random estimates
+  geom_line(data = random_slope_df, 
+            aes(group = category),
+            color = "grey", alpha = 0.3) +
+  # add population-level estimates
+  geom_errorbar(aes(ymin = `95lowerCrI`, ymax = `95higherCrI`),
+                width = 0.2, color = "grey") +
+  geom_line(aes(group = 1), size = 2, color = "black") +
+  geom_point(size = 4, pch = 21, color = "black") +
+  labs(x = "\n Cue Type",
+       y = "Posterior log RT \n",
+       title = "Posterior means for both cue types and their 95% CrI's",
+       subtitle = "with posterior estimates for each category")
+```
+
+```{r fig.align="center", fig.height=6, fig.width=8}
+# Extracting posterior samples from our model to plot a halfeyeh plot
+posteriors2 <- hypo1_max_re %>%
+  spread_draws(b_cue_typesound) %>%
+  select(b_cue_typesound) %>% 
+  gather(key = "parameter", value = "posterior")
+
+ggplot(posteriors2, aes(x = posterior, y = parameter))+
+  geom_halfeyeh(.width = 0.95) +
+  geom_segment(x= 0, xend = 0, y = Inf, yend = -Inf, lty = 'dashed')
+
+```
+
+
+## Second Hypothesis
+```{r}
+# checking if random effects (intercept and slope) are in theory possible to apply to our second model
+xtabs(~congruency+subject_id, data_hypothesis2)
+xtabs(~congruency+category, data_hypothesis2)
+```
+
+```{r, cache = T}
+# brm model without random effects
+hypo2 <- brm(
+  RT_log ~ congruency,
+  # data
+  data = data_hypothesis2,
+  # seed
+  seed = 1
+)
+```
+
+```{r, cache = T}
+# brm model with random effects that are licensed by the data
+hypo2_re <- brm(
+  RT_log ~ congruency + (1 || subject_id) + (1 || category),
+  # data
+  data = data_hypothesis2,
+  # seed
+  seed = 1
+)
+```
+
+```{r, cache = T}
+# brm model with rmaximal andom effects that are licensed by the data
+hypo2_max_re <- brm(
+  RT_log ~ congruency + (congruency || subject_id) + (congruency || category),
+  # data
+  data = data_hypothesis2,
+  # seed
+  seed = 1
+)
+```
+
+### Model output and fit
+```{r}
+# checking the models output and fit
+hypo2
+pp_check(hypo2)
+```
+
+```{r}
+# checking the models output and fit
+hypo2_re
+pp_check(hypo2_re)
+```
+
+```{r}
+# checking the models output and fit
+hypo2_max_re
+pp_check(hypo2_max_re)
+```
+
+### Model comparison
+```{r}
+#Comparing both models using loo compare
+model2 <- loo(hypo2)
+model2_re <- loo(hypo2_re)
+model2_max_re <- loo(hypo2_max_re)
+loo_comp2 <- loo_compare(list(model2 = model2, model2_re = model2_re, model2_max_re = model2_max_re))
+loo_comp2
+```
+
+```{r}
+#Using the z-test to obtain the p-value such we can judge significance of the loo compare results
+1-pnorm(-loo_comp2[2,1], loo_comp2[2,2])
+1-pnorm(-loo_comp2[2,1], loo_comp2[2,3])
+```
+
+### Visual analysis
+```{r fig.align="center", fig.height=9, fig.width=9}
+# Extract the posteriors
+posteriors3 <- hypo2_max_re %>%
+  spread_draws(b_Intercept, 
+               b_congruencyincongruent) %>%
+  # calculate posteriors for each individual level
+  mutate(congruent = b_Intercept,
+         incongruent = b_Intercept + b_congruencyincongruent) %>% 
+  select(congruent, incongruent) %>% 
+  gather(key = "parameter", value = "posterior") %>% 
+  group_by(parameter) %>% 
+  summarise(mean_posterior = mean(posterior),
+            `95lowerCrI` = HDInterval::hdi(posterior, credMass = 0.95)[1],
+            `95higherCrI` = HDInterval::hdi(posterior, credMass = 0.95)[2])
+
+
+
+# extract the random intercepts for exemplars
+random_intc_matrix <- ranef(hypo2_max_re)$subject_id[, , "Intercept"] %>% 
+  round(digits = 2) 
+
+# extract the by-exemplar random slopes for group
+random_slope_matrix <- ranef(hypo2_max_re)$subject_id[, , "congruencyincongruent"] %>% 
+  round(digits = 2)
+
+# random intercepts to dataframe
+random_intc_df <- data.frame(subject_id = row.names(random_intc_matrix), random_intc_matrix) %>% 
+  select(subject_id, Estimate) %>% 
+  rename(rintercept = Estimate)
+
+# combine with random slope matrix
+random_slope_df <- data.frame(subject_id = row.names(random_slope_matrix), random_slope_matrix) %>% 
+  select(subject_id, Estimate) %>% 
+  rename(rslope = Estimate) %>% 
+  full_join(random_intc_df) %>% 
+  # add population parameters and group-specific parameters
+  mutate(congruent_population = fixef(hypo2_max_re)[1],
+         incongruent_population = fixef(hypo2_max_re)[1] + fixef(hypo2_max_re)[2],
+         congruent = rintercept + congruent_population,
+         incongruent = rintercept + rslope + incongruent_population) %>% 
+  select(subject_id, incongruent, congruent) %>% 
+  gather(parameter, mean_posterior, -subject_id)
+  
+
+# combine with plot
+ggplot(data = posteriors3, 
+       aes(x = parameter, y = mean_posterior,
+           color = parameter, fill = parameter)) + 
+   # add random estimates
+  geom_point(data = random_slope_df, 
+             alpha = 0.4,
+             size = 2,
+             position = position_jitter(width = 0.01)
+             ) +
+  # add lines between random estimates
+  geom_line(data = random_slope_df, 
+            aes(group = subject_id),
+            color = "grey", alpha = 0.3) +
+  # add population-level estimates
+  geom_errorbar(aes(ymin = `95lowerCrI`, ymax = `95higherCrI`),
+                width = 0.2, color = "grey") +
+  geom_line(aes(group = 1), size = 2, color = "black") +
+  geom_point(size = 4, pch = 21, color = "black") +
+  labs(x = "\n Congruency",
+       y = "Posterior log RT \n",
+       title = "Posterior means for both levels of congruency and their 95% CrI's",
+       subtitle = "with posterior estimates for each subject")
+```
+
+```{r fig.align="center", fig.height=9, fig.width=9}
+# extract the random intercepts for exemplars
+random_intc_matrix <- ranef(hypo2_max_re)$category[, , "Intercept"] %>% 
+  round(digits = 2) 
+
+# extract the by-exemplar random slopes for group
+random_slope_matrix <- ranef(hypo2_max_re)$category[, , "congruencyincongruent"] %>% 
+  round(digits = 2)
+
+# random intercepts to dataframe
+random_intc_df <- data.frame(category = row.names(random_intc_matrix), random_intc_matrix) %>% 
+  select(category, Estimate) %>% 
+  rename(rintercept = Estimate)
+
+# combine with random slope matrix
+random_slope_df <- data.frame(category = row.names(random_slope_matrix), random_slope_matrix) %>% 
+  select(category, Estimate) %>% 
+  rename(rslope = Estimate) %>% 
+  full_join(random_intc_df) %>% 
+  # add population parameters and group-specific parameters
+  mutate(congruent_population = fixef(hypo2_max_re)[1],
+         incongruent_population = fixef(hypo2_max_re)[1] + fixef(hypo2_max_re)[2],
+         congruent = rintercept + congruent_population,
+         incongruent = rintercept + rslope + incongruent_population) %>% 
+  select(category, incongruent, congruent) %>% 
+  gather(parameter, mean_posterior, -category)
+  
+
+# combine with plot
+ggplot(data = posteriors3, 
+       aes(x = parameter, y = mean_posterior,
+           color = parameter, fill = parameter)) + 
+   # add random estimates
+  geom_point(data = random_slope_df, 
+             alpha = 0.4,
+             size = 2,
+             position = position_jitter(width = 0.01)
+             ) +
+  # add lines between random estimates
+  geom_line(data = random_slope_df, 
+            aes(group = category),
+            color = "grey", alpha = 0.3) +
+  # add population-level estimates
+  geom_errorbar(aes(ymin = `95lowerCrI`, ymax = `95higherCrI`),
+                width = 0.2, color = "grey") +
+  geom_line(aes(group = 1), size = 2, color = "black") +
+  geom_point(size = 4, pch = 21, color = "black") +
+  labs(x = "\n Congruency",
+       y = "Posterior log RT \n",
+       title = "Posterior means for both levels of congruency and their 95% CrI's",
+       subtitle = "with posterior estimates for each category")
+```
+
+```{r fig.align="center", fig.height=6, fig.width=8}
+# Extracting posterior samples from our model to plot a halfeyeh plot
+posteriors4 <- hypo2_max_re %>%
+  spread_draws(b_congruencyincongruent ) %>%
+  select(b_congruencyincongruent ) %>% 
+  gather(key = "parameter", value = "posterior")
+
+ggplot(posteriors4, aes(x = posterior, y = parameter))+
+  geom_halfeyeh(.width = 0.95) +
+  geom_segment(x= 0, xend = 0, y = Inf, yend = -Inf, lty = 'dashed')
+
+```
+
+```{r fig.align="center", fig.height=6, fig.width=8}
+posterior_data_model1 <- posterior_samples(hypo1_max_re)
+posterior_data_model2 <- posterior_samples(hypo2_max_re)
+df1 <- tibble(cue_type = c("label", "congruent", "incongruent"), 
+              RTs = c(exp(mean(posterior_data_model1$b_Intercept)), 
+                      exp(mean(posterior_data_model2$b_Intercept)), 
+                      exp(mean(posterior_data_model2$b_Intercept+posterior_data_model2$b_congruencyincongruent))),
+              Lower_CrI = c(HDInterval::hdi(exp(posterior_data_model1$b_Intercept), 0.95)[1], 
+                            HDInterval::hdi(exp(posterior_data_model2$b_Intercept), 0.95)[1], 
+                            HDInterval::hdi(exp(posterior_data_model2$b_Intercept+posterior_data_model2$b_congruencyincongruent), 0.95)[1]),
+              Upper_CrI = c(HDInterval::hdi(exp(posterior_data_model1$b_Intercept), 0.95)[2], 
+                            HDInterval::hdi(exp(posterior_data_model2$b_Intercept), 0.95)[2], 
+                            HDInterval::hdi(exp(posterior_data_model2$b_Intercept+posterior_data_model2$b_congruencyincongruent), 0.95)[2]))
+
+df1$cue_type <- factor(c("label", "congruent", "incongruent"))
+df1$cue_type <- factor(df1$cue_type, levels = c("label", "congruent", "incongruent"))
+
+ggplot(df1, aes(y = RTs, x = cue_type)) +
+  geom_bar(aes(color = cue_type, fill = cue_type), alpha = 0.6, stat = "identity", show.legend = F) +
+  geom_errorbar(aes(ymin = Lower_CrI, ymax= Upper_CrI)) +
+  labs(title = "Mean RTs and the respective CrI's",
+         y = "RT \n",
+         x = "\n Cue Type")
+```
+
+# Explorative Hypothesis
+
+## Hypotheses three
+```{r}
+# checking if random effects (intercept and slope) are in theory possible to apply to our second model
+xtabs(~cue_type+subject_id, data_hypothesis3)
+xtabs(~cue_type+category, data_hypothesis3)
+```
+
+```{r, cache = T}
+# brm model with maximal random effects that are licensed by the data
+hypo3<- brm(
+  RT_log ~ cue_type,
+  # data
+  data = data_hypothesis3,
+  # seed
+  seed = 1
+)
+```
+
+```{r, cache = T}
+# brm model with maximal random effects that are licensed by the data
+hypo3_re<- brm(
+  RT_log ~ cue_type + (cue_type || subject_id) + (1 || category),
+  # data
+  data = data_hypothesis3,
+  # seed
+  seed = 1
+)
+```
+
+```{r, cache = T}
+# brm model with maximal random effects that are licensed by the data
+hypo3_max_re<- brm(
+  RT_log ~ cue_type + (cue_type || subject_id) + (cue_type || category),
+  # data
+  data = data_hypothesis3,
+  # seed
+  seed = 1
+)
+```
+
+
+### Model output and fit
+```{r}
+# checking the models output and fit
+hypo3
+pp_check(hypo3)
+```
+
+```{r}
+# checking the models output and fit
+hypo3_re
+pp_check(hypo3_re)
+```
+
+```{r}
+# checking the models output and fit
+hypo3_max_re
+pp_check(hypo3_max_re)
+```
+
+### Model comparison
+```{r}
+#Comparing both models using loo compare
+model3 <- loo(hypo3)
+model3_re <- loo(hypo3_re)
+model3_max_re <- loo(hypo3_max_re)
+loo_comp3 <- loo_compare(list(model3 = model3, model3_re = model3_re, model3_max_re = model3_max_re))
+loo_comp3
+```
+
+```{r}
+#Using the z-test to obtain the p-value such we can judge significance of the loo compare results
+1-pnorm(-loo_comp3[2,1], loo_comp3[2,2])
+1-pnorm(-loo_comp3[2,1], loo_comp3[2,3])
+```
+
+### Visual analysis
+```{r fig.align="center", fig.height=6, fig.width=8}
+# Extracting posterior samples from our model to plot a halfeyeh plot
+posteriors4 <- hypo3_max_re %>%
+  spread_draws(b_cue_typesound ) %>%
+  select(b_cue_typesound ) %>% 
+  gather(key = "parameter", value = "posterior")
+
+ggplot(posteriors4, aes(x = posterior, y = parameter))+
+  geom_halfeyeh(.width = 0.95) +
+  geom_segment(x= 0, xend = 0, y = Inf, yend = -Inf, lty = 'dashed')
+
+```
+
+## Hypotheses four
+```{r, cache = T}
+
+# brm model with maximal random effects that are licensed by the data
+hypo4 <- brm(
+  RT_log ~ cue_type,
+  # data
+  data = data_hypothesis4,
+  # seed
+  seed = 1
+)
+```
+
+```{r, cache = T}
+
+# brm model with maximal random effects that are licensed by the data
+hypo4_re <- brm(
+  RT_log ~ cue_type + (1 || subject_id) + (1 || category),
+  # data
+  data = data_hypothesis4,
+  # seed
+  seed = 1
+)
+```
+
+```{r, cache = T}
+
+# brm model with maximal random effects that are licensed by the data
+hypo4_max_re <- brm(
+  RT_log ~ cue_type + (cue_type || subject_id) + (cue_type || category),
+  # data
+  data = data_hypothesis4,
+  # seed
+  seed = 1
+)
+```
+
+
+### Model output and fit
+```{r}
+# checking the models output and fit
+hypo4
+pp_check(hypo4)
+```
+
+```{r}
+# checking the models output and fit
+hypo4_re
+pp_check(hypo4_re)
+```
+
+```{r}
+# checking the models output and fit
+hypo4_max_re
+pp_check(hypo4_max_re)
+```
+
+### Model comparison
+```{r}
+#Comparing both models using loo compare
+model4 <- loo(hypo4)
+model4_re <- loo(hypo4_re)
+model4_max_re <- loo(hypo4_max_re)
+loo_comp4 <- loo_compare(list(model4 = model4, model4_re = model4_re, model4_max_re = model4_max_re))
+loo_comp4
+```
+
+```{r}
+#Using the z-test to obtain the p-value such we can judge significance of the loo compare results
+1-pnorm(-loo_comp4[2,1], loo_comp4[2,2])
+1-pnorm(-loo_comp4[2,1], loo_comp4[2,3])
+``` 
+
+### Visual analysis
+```{r fig.align="center", fig.height=6, fig.width=8}
+# Extracting posterior samples from our model to plot a halfeyeh plot
+posteriors5 <- hypo4_max_re %>%
+  spread_draws(b_cue_typesound ) %>%
+  select(b_cue_typesound ) %>% 
+  gather(key = "parameter", value = "posterior")
+
+ggplot(posteriors5, aes(x = posterior, y = parameter))+
+  geom_halfeyeh(.width = 0.95) +
+  geom_segment(x= 0, xend = 0, y = Inf, yend = -Inf, lty = 'dashed')
+
+```
+
+# Citations for the packages that have been used.
+```{r}
+citation()
+citation("tidyverse")
+citation("brms")
+citation("loo")
+citation("aida")
+citation("tidybayes")
+citation("HDInterval")
+citation("bayesplot")
+```
+
