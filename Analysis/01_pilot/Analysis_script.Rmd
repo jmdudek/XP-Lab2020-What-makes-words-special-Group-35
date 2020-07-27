@@ -72,7 +72,7 @@ data <- data %>%
 # creating data frame that we are going to work with in our analysis
 data_agg <- data %>% 
   # filtering for all matching, main trials in which the subjects gave correct answers
-  filter(trial_name == "main", correctness == 'correct', match == 'match', submission_id != 1405) %>% 
+  filter(trial_name == "main", correctness == 'correct', match == 'match') %>% 
   # selecting the columns that are needed for analysis
   select(submission_id, RT, sound_type, congruency, sound_instance, image_category, image_instance, number_of_image) %>% 
   # renaming columns for simplicity
@@ -116,7 +116,7 @@ outlier_proportion
 ```
 
 ## Log transformation of RT
-```{r, fig.height=10, fig.width=10, fig.align = "center"}
+```{r, fig.height=9, fig.width=9, fig.align = "center"}
 # log transform RT 
 data_agg$RT_log <- log(data_agg$RT)
 
@@ -124,7 +124,6 @@ data_agg$RT_log <- log(data_agg$RT)
 data_agg %>%
   ggplot() +
   geom_density(aes(x = RT), color = "lightblue", fill = "lightblue", alpha = 0.3) +
-  xlim(c(0,1700)) +
   labs(
     title = "Density plot for untransformed RT values",
     y = "Density \n",
@@ -143,7 +142,7 @@ data_agg %>%
 ```
 
 ## Checking for major differnces in RT between categories
-```{r, fig.height=10, fig.width=10, fig.align = "center"}
+```{r, fig.height=9, fig.width=9, fig.align = "center"}
 # checking if any category exhibits unusual RTs 
 data_agg %>% 
   ggplot() +
@@ -207,7 +206,7 @@ data_hypothesis4 <- data_agg2 %>%
 # Hypothesis-driven plots
 
 ## Plot for first Hypothesis
-```{r, fig.height=10, fig.width=10, fig.align = "center"}
+```{r, fig.height=9, fig.width=9, fig.align = "center"}
 # creating data set for our first hypothesis
 data_hypothesis1 <- data_agg %>% 
   #filter(image_category != "dog") %>% 
@@ -235,7 +234,7 @@ data_hypothesis1 %>%
 ```
 
 ## Plot for second Hypothesis
-```{r, fig.height=10, fig.width=10, fig.align = "center"}
+```{r, fig.height=9, fig.width=9, fig.align = "center"}
 
 # creating data set for our second hypothesis
 data_hypothesis2 <- data_agg %>% 
@@ -264,7 +263,7 @@ data_hypothesis2 %>%
 ```
 
 ## Plot for third Hypothesis
-```{r fig.align= 'center', fig.height=10, fig.width=10}
+```{r fig.align= 'center', fig.height=9, fig.width=9}
 # creating data set for our first hypothesis
 data_hypothesis3 <- data_agg %>% 
   filter(congruency != "incongruent") %>% 
@@ -291,7 +290,7 @@ data_hypothesis3 %>%
 ```
 
 ## Plot for fourth Hypothesis
-```{r, fig.height=10, fig.width=10, fig.align = "center"}
+```{r, fig.height=9, fig.width=9, fig.align = "center"}
 
 # Density plot for both cue types
 data_hypothesis4 %>% 
@@ -376,7 +375,7 @@ loo_comp1
 ```
 
 ### Visual analysis
-```{r, fig.align = "center", fig.height=10, fig.width=10}
+```{r, fig.align = "center", fig.height=9, fig.width=9}
 # Extract the posteriors
 posteriors <- hypo1_max_re %>%
   spread_draws(b_Intercept, 
@@ -445,7 +444,7 @@ ggplot(data = posteriors,
        subtitle = "with posterior estimates for each subject")
 ```
 
-```{r, fig.align = "center", fig.height=10, fig.width=10}
+```{r, fig.align = "center", fig.height=9, fig.width=9}
 # extract the random intercepts for exemplars
 random_intc_matrix <- ranef(hypo1_max_re)$category[, , "Intercept"] %>% 
   round(digits = 2) 
@@ -498,7 +497,7 @@ ggplot(data = posteriors,
        subtitle = "with posterior estimates for each category")
 ```
 
-```{r, fig.align = "center", fig.height=10, fig.width=10}
+```{r, fig.align = "center", fig.height=9, fig.width=9}
 # Extracting posterior samples from our model to plot a halfeyeh plot
 posteriors2 <- hypo1_max_re %>%
   spread_draws(b_cue_typesound) %>%
@@ -569,7 +568,7 @@ loo_comp2
 ```
 
 ### Visual analysis
-```{r, fig.align = "center", fig.height=10, fig.width=10}
+```{r, fig.align = "center", fig.height=9, fig.width=9}
 # Extract the posteriors
 posteriors3 <- hypo2_max_re %>%
   spread_draws(b_Intercept, 
@@ -638,7 +637,7 @@ ggplot(data = posteriors3,
        subtitle = "with posterior estimates for each subject")
 ```
 
-```{r, fig.align = "center", fig.height=10, fig.width=10}
+```{r, fig.align = "center", fig.height=9, fig.width=9}
 # extract the random intercepts for exemplars
 random_intc_matrix <- ranef(hypo2_max_re)$category[, , "Intercept"] %>% 
   round(digits = 2) 
@@ -691,7 +690,7 @@ ggplot(data = posteriors3,
        subtitle = "with posterior estimates for each category")
 ```
 
-```{r, fig.align = "center", fig.height=10, fig.width=10}
+```{r, fig.align = "center", fig.height=9, fig.width=9}
 # Extracting posterior samples from our model to plot a halfeyeh plot
 posteriors4 <- hypo2_max_re %>%
   spread_draws(b_congruencyincongruent ) %>%
@@ -704,7 +703,7 @@ ggplot(posteriors4, aes(x = posterior, y = parameter))+
 
 ```
 
-```{r, fig.align = "center", fig.height=10, fig.width=10}
+```{r, fig.align = "center", fig.height=9, fig.width=9}
 posterior_data_model1 <- posterior_samples(hypo1_max_re)
 posterior_data_model2 <- posterior_samples(hypo2_max_re)
 df1 <- tibble(cue_type = c("label", "congruent", "incongruent"), 
@@ -789,7 +788,7 @@ loo_comp3
 ```
 
 ### Visual analysis
-```{r, fig.align = "center", fig.height=10, fig.width=10}
+```{r, fig.align = "center", fig.height=9, fig.width=9}
 # Extracting posterior samples from our model to plot a halfeyeh plot
 posteriors4 <- hypo3_max_re %>%
   spread_draws(b_cue_typesound ) %>%
@@ -856,7 +855,7 @@ loo_comp4
 ```
 
 ### Visual analysis
-```{r, fig.align = "center", fig.height=10, fig.width=10}
+```{r, fig.align = "center", fig.height=9, fig.width=9}
 # Extracting posterior samples from our model to plot a halfeyeh plot
 posteriors5 <- hypo4_max_re %>%
   spread_draws(b_cue_typesound ) %>%
