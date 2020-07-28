@@ -124,7 +124,7 @@ data_agg %>%
   ggplot() +
   geom_density(aes(x = RT), color = "lightblue", fill = "lightblue", alpha = 0.3) +
   labs(
-    title = "Density plot for untransformed RT values",
+    title = "Density plot of untransformed RT values",
     y = "Density \n",
     x = "\n Reaction Times (RT)"
   )
@@ -134,11 +134,13 @@ data_agg %>%
   ggplot() +
   geom_density(aes(x = RT_log), color = "orange", fill = "orange", alpha = 0.3) +
   labs(
-    title = "Density plot for log transformed RT values",
+    title = "Density plot of log transformed RT values",
     y = "Density \n",
     x = "\n log Reaction Times (RT)"
   )
 ```
+
+After having log-transformed the reaction time values (RT) the data looks indeed more normally distributed.
 
 ## Checking for major differnces in RT between categories
 ```{r, fig.align="center", fig.height=9, fig.width=9}
@@ -153,6 +155,8 @@ data_agg %>%
     fill = "Basic-level categories", 
     color = "Basic-level categories")
 ```
+
+All categories exhibit roughly the same distribution of reaction time values with only minor deviations. To account for those deviations we will include random effects.
 
 ## Data sets for each hypothesis
 ```{r}
@@ -232,6 +236,8 @@ data_hypothesis1 %>%
        )
 ```
 
+The densitiy distribution of reaction time values for the sound cue are slightly shifted to the right compared to the distribution of RT's for the label cue. This can also be seen in their respective mean reaction time, giving a positive first insight for our first hypothesis.
+
 ## Plot for second Hypothesis
 ```{r, fig.align = "center", fig.height=9, fig.width=9}
 
@@ -261,6 +267,8 @@ data_hypothesis2 %>%
        )
 ```
 
+The densitiy distribution of reaction time values for the incongruent trials are slightly shifted to the right compared to the distribution of RT's for the congruent ones. This can also be seen in their respective mean reaction time, giving a positive first insight for our second hypothesis.
+
 ## Plot for third Hypothesis
 ```{r, fig.align="center", fig.height=9, fig.width=9}
 # creating data set for our first hypothesis
@@ -288,6 +296,8 @@ data_hypothesis3 %>%
        )
 ```
 
+Here the mean reaction times are very close together and the densitiy distributions do not differ much. No clear trend is visible. Hence, our data does not provide much evidence (at least visually) in favor of our third hypothesis.
+
 ## Plot for fourth Hypothesis
 ```{r, fig.align = "center", fig.height=9, fig.width=9}
 
@@ -310,6 +320,8 @@ data_hypothesis4 %>%
        )
 ```
 
+When looking at the densities of reaction time values for both cue types, but only considering mismatching trials, we see similar results as in the first plot. Hence, the data lends visual credence to our fourth hypothesis.
+
 # Running brm models for hypothesis
 We performed our statistical analysis using R and RStudio and based our inference on mixed effects bayesian linear regression modelling using the R package `brms`.
 For each model we specified maximal random effects that were liscenced by the data. In case the CrI's of the respective random effect included 0, we excluded the RE and compared the resulting model to the previous one via Leave-one-out cross validation (using the `LOO` package). For comparision we always included the model without the random effects structure. Out of all models we then chose the one with the highest ELPD score to perform the hypothesis testing.
@@ -322,6 +334,7 @@ xtabs(~cue_type+subject_id, data_hypothesis1)
 xtabs(~cue_type+category, data_hypothesis1)
 ```
 
+Each subject and each category provides multiple data points for each level of cue type. Hence, it is in theory justified to use random by subjects / by category intercepts and slopes.
 
 We will run several brm models for the first hypothesis, so that we can compare their performance later on.
 
@@ -338,8 +351,9 @@ hypo1 <- brm(
 
 ```{r, cache = T}
 # brm model with random effects that are licensed by the data
+# as 0 was included in the random by category slope in the max_re model we just used the random by category intercept here
 hypo1_re <- brm(
-  RT_log ~ cue_type + (1 || subject_id) + (cue_type || category),
+  RT_log ~ cue_type + (cue_type || subject_id) + (1 || category),
   # data
   data = data_hypothesis1,
   # seed
@@ -391,13 +405,19 @@ loo_comp1
 ```{r}
 #Using the z-test to obtain the p-value such we can judge significance of the loo compare results
 1-pnorm(-loo_comp1[2,1], loo_comp1[2,2])
-1-pnorm(-loo_comp1[2,1], loo_comp1[2,3])
+1-pnorm(-loo_comp1[3,1], loo_comp1[3,2])
 ```
+
+#### Evaluation of all models
+All our model converged and had no problems with divergent iterations. 
+When comparing the posterior (based on samples from the model) against the data via `pp_check()` our models performed fairly well. The resulting $Y_{rep}'s$ seem to be able to describe the underlying data distribution $y$. This indicates (at least visuallly) that our models are appropriate for describing the data at hand and do not lack any importaat aspects of the original data.
+Looking at the credible intervals for the specified RE's, they all exclude the 0 apart from the random by category slope for cue_type, making the parameters credibly bigger than zero. This means that the data at hand lends credence to these factors (where 0 is excluded in CrI) playing a role in the data-generating process.
+Using the `loo_compare()` function we found that the **max_re** and **re** model performed significantly better than the model without random effects by by ca. `r - round(loo_comp1[3,1])` points of expected log predictive density. While the difference between the **max_re** and **re** model was non significant we still chose the one with the highest overall ELPD score (here: model1_re).
 
 ### Visual analysis
 ```{r fig.align="center", fig.height=9, fig.width=9}
 # Extract the posteriors
-posteriors <- hypo1_max_re %>%
+posteriors <- hypo1_re %>%
   spread_draws(b_Intercept, 
                b_cue_typesound) %>%
   # calculate posteriors for each individual level
@@ -413,11 +433,11 @@ posteriors <- hypo1_max_re %>%
 
 
 # extract the random intercepts for exemplars
-random_intc_matrix <- ranef(hypo1_max_re)$subject_id[, , "Intercept"] %>% 
+random_intc_matrix <- ranef(hypo1_re)$subject_id[, , "Intercept"] %>% 
   round(digits = 2) 
 
 # extract the by-exemplar random slopes for group
-random_slope_matrix <- ranef(hypo1_max_re)$subject_id[, , "cue_typesound"] %>% 
+random_slope_matrix <- ranef(hypo1_re)$subject_id[, , "cue_typesound"] %>% 
   round(digits = 2)
 
 # random intercepts to dataframe
@@ -431,8 +451,8 @@ random_slope_df <- data.frame(subject_id = row.names(random_slope_matrix), rando
   rename(rslope = Estimate) %>% 
   full_join(random_intc_df) %>% 
   # add population parameters and group-specific parameters
-  mutate(label_population = fixef(hypo1_max_re)[1],
-         sound_population = fixef(hypo1_max_re)[1] + fixef(hypo1_max_re)[2],
+  mutate(label_population = fixef(hypo1_re)[1],
+         sound_population = fixef(hypo1_re)[1] + fixef(hypo1_re)[2],
          label = rintercept + label_population,
          sound = rintercept + rslope + sound_population) %>% 
   select(subject_id, sound, label) %>% 
@@ -463,6 +483,9 @@ ggplot(data = posteriors,
        title = "Posterior means for both cue types and their 95% CrI's",
        subtitle = "with posterior estimates for each subject")
 ```
+
+As one can see, most lines slope upward just like the population estimate. However, they do so to different degrees. Moreover, one can also see that some subjects show the opposite patterns with downward sloping lines. Hence, it is very useful to account for these discrepancies between our subjects.
+
 
 ```{r fig.align="center", fig.height=9, fig.width=9}
 # extract the random intercepts for exemplars
@@ -517,9 +540,11 @@ ggplot(data = posteriors,
        subtitle = "with posterior estimates for each category")
 ```
 
+When looking at the different regression lines for each category from the max_re model we see that the random by category slopes can indeed be left out. The lines vary with respect to the intercept but not so much with respect to the population level slope.
+
 ```{r fig.align="center", fig.height=6, fig.width=8}
 # Extracting posterior samples from our model to plot a halfeyeh plot
-posteriors2 <- hypo1_max_re %>%
+posteriors2 <- hypo1_re %>%
   spread_draws(b_cue_typesound) %>%
   select(b_cue_typesound) %>% 
   gather(key = "parameter", value = "posterior")
@@ -530,6 +555,8 @@ ggplot(posteriors2, aes(x = posterior, y = parameter))+
 
 ```
 
+When looking at the CrI for the population level slope coefficient `b_cue_typesound`, which gives us the change in reaction time when switching from the spoken labels to the environmental sounds, we see that 0 is excluded [0.02, 0.09] --> the posterior CrI is close to zero but nontheless only includes positive values
+Thus, given the data, the model and the priors, we can be certain that this coefficient is not zero and that there is in fact a positive relationship between RT and cue_type. This gives credence to our first hypothesis.
 
 ## Second Hypothesis
 ```{r}
@@ -537,6 +564,8 @@ ggplot(posteriors2, aes(x = posterior, y = parameter))+
 xtabs(~congruency+subject_id, data_hypothesis2)
 xtabs(~congruency+category, data_hypothesis2)
 ```
+
+Each subject and each category provides multiple data points for each level of congruency. Hence, it is in theory justified to use random by subjects / by category intercepts and slopes.
 
 ```{r, cache = T}
 # brm model without random effects
@@ -551,6 +580,7 @@ hypo2 <- brm(
 
 ```{r, cache = T}
 # brm model with random effects that are licensed by the data
+# as 0 was included in the random by category slope and random by subject_id slope in the max_re model we just used the respective random intercepts here
 hypo2_re <- brm(
   RT_log ~ congruency + (1 || subject_id) + (1 || category),
   # data
@@ -603,8 +633,14 @@ loo_comp2
 ```{r}
 #Using the z-test to obtain the p-value such we can judge significance of the loo compare results
 1-pnorm(-loo_comp2[2,1], loo_comp2[2,2])
-1-pnorm(-loo_comp2[2,1], loo_comp2[2,3])
+1-pnorm(-loo_comp1[3,1], loo_comp1[3,2])
 ```
+
+#### Evaluation of all models
+All our model converged and had no problems with divergent iterations. 
+When comparing the posterior (based on samples from the model) against the data via `pp_check()` our models performed fairly well. The resulting $Y_{rep}'s$ seem to be able to describe the underlying data distribution $y$. This indicates (at least visuallly) that our models are appropriate for describing the data at hand and do not lack any importaat aspects of the original data.
+Looking at the credible intervals for the specified RE's, they all exclude the 0 apart from the random by category and random by subject_id slope for congruency, making the parameters credibly bigger than zero. This means that the data at hand lends credence to these factors (where 0 is excluded in CrI) playing a role in the data-generating process.
+Using the `loo_compare()` function we found that the **max_re** and **re** model performed significantly better than the model without random effects by by ca. `r - round(loo_comp1[3,1])` points of expected log predictive density. While the difference between the **max_re** and **re** model was non significant we still chose the one with the highest overall ELPD score (here: model2_re).
 
 ### Visual analysis
 ```{r fig.align="center", fig.height=9, fig.width=9}
@@ -729,22 +765,28 @@ ggplot(data = posteriors3,
        subtitle = "with posterior estimates for each category")
 ```
 
+When looking at the different regression lines for each subject / category from the max_re model we see that the random by subject / by category slopes can indeed be left out. The lines vary with respect to the intercept but not so much with respect to the population level slope.
+
 ```{r fig.align="center", fig.height=6, fig.width=8}
 # Extracting posterior samples from our model to plot a halfeyeh plot
-posteriors4 <- hypo2_max_re %>%
+posteriors4 <- hypo2_re %>%
   spread_draws(b_congruencyincongruent ) %>%
   select(b_congruencyincongruent ) %>% 
   gather(key = "parameter", value = "posterior")
 
 ggplot(posteriors4, aes(x = posterior, y = parameter))+
   geom_halfeyeh(.width = 0.95) +
-  geom_segment(x= 0, xend = 0, y = Inf, yend = -Inf, lty = 'dashed')
+  geom_segment(x= 0, xend = 0, y = Inf, yend = -Inf, lty = 'dashed') +
+  xlim(c(-0.025,0.15))
 
 ```
 
+When looking at the CrI for the population level slope coefficient `b_congruencyincongruent`, which gives us the change in reaction time when switching from the spoken labels to the environmental sounds, we see that 0 is excluded [0.05, 0.12] --> the posterior is close to zero but nontheless only includes positive values
+Thus, given the data, the model and the priors, we can be certain that this coefficient is not zero and that there is in fact a positive relationship between RT and congruency as our second hypothesis suggests. 
+
 ```{r fig.align="center", fig.height=6, fig.width=8}
-posterior_data_model1 <- posterior_samples(hypo1_max_re)
-posterior_data_model2 <- posterior_samples(hypo2_max_re)
+posterior_data_model1 <- posterior_samples(hypo1_re)
+posterior_data_model2 <- posterior_samples(hypo2_re)
 df1 <- tibble(cue_type = c("label", "congruent", "incongruent"), 
               RTs = c(exp(mean(posterior_data_model1$b_Intercept)), 
                       exp(mean(posterior_data_model2$b_Intercept)), 
@@ -760,12 +802,14 @@ df1$cue_type <- factor(c("label", "congruent", "incongruent"))
 df1$cue_type <- factor(df1$cue_type, levels = c("label", "congruent", "incongruent"))
 
 ggplot(df1, aes(y = RTs, x = cue_type)) +
-  geom_bar(aes(color = cue_type, fill = cue_type), alpha = 0.6, stat = "identity", show.legend = F) +
-  geom_errorbar(aes(ymin = Lower_CrI, ymax= Upper_CrI)) +
-  labs(title = "Mean RTs and the respective CrI's",
+  geom_bar(aes(color = cue_type, fill = cue_type), alpha = 0.6, stat = "identity", width = 0.5, show.legend = F) +
+  #geom_errorbar(aes(ymin = Lower_CrI, ymax= Upper_CrI)) +
+  labs(title = "Mean reaction time values for each auditory cue",
          y = "RT \n",
-         x = "\n Cue Type")
+         x = "\n Cue Type") 
 ```
+
+Attempt to replicate the plot from the original paper: mean RT values for label vs. congruent vs. incongruent auditory cues.
 
 # Explorative Hypothesis
 
@@ -775,6 +819,8 @@ ggplot(df1, aes(y = RTs, x = cue_type)) +
 xtabs(~cue_type+subject_id, data_hypothesis3)
 xtabs(~cue_type+category, data_hypothesis3)
 ```
+
+Each subject and each category provides multiple data points for each level of cue type. Hence, it is in theory justified to use random by subjects / by category intercepts and slopes.
 
 ```{r, cache = T}
 # brm model with maximal random effects that are licensed by the data
@@ -789,6 +835,7 @@ hypo3<- brm(
 
 ```{r, cache = T}
 # brm model with maximal random effects that are licensed by the data
+# as 0 was included in the random by category slope in the max_re model we just used the random by category intercept here
 hypo3_re<- brm(
   RT_log ~ cue_type + (cue_type || subject_id) + (1 || category),
   # data
@@ -842,13 +889,20 @@ loo_comp3
 ```{r}
 #Using the z-test to obtain the p-value such we can judge significance of the loo compare results
 1-pnorm(-loo_comp3[2,1], loo_comp3[2,2])
-1-pnorm(-loo_comp3[2,1], loo_comp3[2,3])
+1-pnorm(-loo_comp1[3,1], loo_comp1[3,2])
 ```
+
+#### Evaluation of all models
+All our model converged and had no problems with divergent iterations. 
+When comparing the posterior (based on samples from the model) against the data via `pp_check()` our models performed fairly well. The resulting $Y_{rep}'s$ seem to be able to describe the underlying data distribution $y$. This indicates (at least visuallly) that our models are appropriate for describing the data at hand and do not lack any importaat aspects of the original data.
+Looking at the credible intervals for the specified RE's, they all exclude the 0 apart from the random by category slope for cue_type, making the parameters credibly bigger than zero. This means that the data at hand lends credence to these factors (where 0 is excluded in CrI) playing a role in the data-generating process.
+Using the `loo_compare()` function we found that the **max_re** and **re** model performed significantly better than the model without random effects by by ca. `r - round(loo_comp1[3,1])` points of expected log predictive density. While the difference between the **max_re** and **re** model was non significant we still chose the one with the highest overall ELPD score (here: model3_re).
+
 
 ### Visual analysis
 ```{r fig.align="center", fig.height=6, fig.width=8}
 # Extracting posterior samples from our model to plot a halfeyeh plot
-posteriors4 <- hypo3_max_re %>%
+posteriors4 <- hypo3_re %>%
   spread_draws(b_cue_typesound ) %>%
   select(b_cue_typesound ) %>% 
   gather(key = "parameter", value = "posterior")
@@ -859,7 +913,21 @@ ggplot(posteriors4, aes(x = posterior, y = parameter))+
 
 ```
 
+When looking at the CrI for the slope coefficient `b_cue_typesound`, which gives us the change in reaction time when switching from the spoken labels to the environmental sounds, we see that 0 is not excluded [-0.03, 0.06].
+This can be also seen when looking at the halfeyeh plot: there the dashed line (representing the 0) is clearly included
+--> the posterior CrI includes positive and negative values alike, lending not much credence to our hypothesis.
+We can say that given the data, the model, and our prior assumptions, the belief that RT values are slower for congruent environmental sounds is not very plausible (third hypothesis).
+
 ## Hypotheses four
+
+```{r}
+# checking if random effects (intercept and slope) are in theory possible to apply to our second model
+xtabs(~cue_type+subject_id, data_hypothesis4)
+xtabs(~cue_type+category, data_hypothesis4)
+```
+
+Each subject and each category provides multiple data points for each level of cue type. Hence, it is in theory justified to use random by subjects / by category intercepts and slopes.
+
 ```{r, cache = T}
 
 # brm model with maximal random effects that are licensed by the data
@@ -875,6 +943,7 @@ hypo4 <- brm(
 ```{r, cache = T}
 
 # brm model with maximal random effects that are licensed by the data
+# as 0 was included in the random by category slope and random by subject_id slope in the max_re model we just used the respective random intercepts here
 hypo4_re <- brm(
   RT_log ~ cue_type + (1 || subject_id) + (1 || category),
   # data
@@ -929,22 +998,32 @@ loo_comp4
 ```{r}
 #Using the z-test to obtain the p-value such we can judge significance of the loo compare results
 1-pnorm(-loo_comp4[2,1], loo_comp4[2,2])
-1-pnorm(-loo_comp4[2,1], loo_comp4[2,3])
+1-pnorm(-loo_comp1[3,1], loo_comp1[3,2])
 ``` 
+
+#### Evaluation of all models
+All our model converged and had no problems with divergent iterations. 
+When comparing the posterior (based on samples from the model) against the data via `pp_check()` our models performed fairly well. The resulting $Y_{rep}'s$ seem to be able to describe the underlying data distribution $y$. This indicates (at least visuallly) that our models are appropriate for describing the data at hand and do not lack any importaat aspects of the original data.
+Looking at the credible intervals for the specified RE's, they all exclude the 0 apart from the random by category and random by subject_id slope for cue_type, making the parameters credibly bigger than zero. This means that the data at hand lends credence to these factors (where 0 is excluded in CrI) playing a role in the data-generating process.
+Using the `loo_compare()` function we found that the **max_re** and **re** model performed significantly better than the model without random effects by by ca. `r - round(loo_comp1[3,1])` points of expected log predictive density. While the difference between the **max_re** and **re** model was non significant we still chose the one with the highest overall ELPD score (here: model4_re).
 
 ### Visual analysis
 ```{r fig.align="center", fig.height=6, fig.width=8}
 # Extracting posterior samples from our model to plot a halfeyeh plot
-posteriors5 <- hypo4_max_re %>%
+posteriors5 <- hypo4_re %>%
   spread_draws(b_cue_typesound ) %>%
   select(b_cue_typesound ) %>% 
   gather(key = "parameter", value = "posterior")
 
 ggplot(posteriors5, aes(x = posterior, y = parameter))+
   geom_halfeyeh(.width = 0.95) +
-  geom_segment(x= 0, xend = 0, y = Inf, yend = -Inf, lty = 'dashed')
+  geom_segment(x= 0, xend = 0, y = Inf, yend = -Inf, lty = 'dashed') +
+  xlim(c(-0.005, 0.08))
 
 ```
+
+When looking at the CrI for the population level slope coefficient `b_cue_typesound`, which gives us the change in reaction time when switching from the spoken labels to the environmental sounds for mismatching trials, we see that 0 is excluded [0.02, 0.06] --> the posterior is close to zero but nontheless only includes positive values
+Thus, given the data, the model and the priors, we can be certain that this coefficient is not zero and that there is in fact a positive relationship between RT and cue_type for mismatching trials. This gives credence to our fourth hypothesis.
 
 # Citations for the packages that have been used.
 ```{r}
