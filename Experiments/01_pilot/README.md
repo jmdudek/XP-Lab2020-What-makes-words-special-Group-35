@@ -1,8 +1,6 @@
-# Activation of basic level categories in the human brain based on different cue types. 
+# Activation of basic level categories in the human brain based on different cue types. - Pilot Study
 
-This repository contains an auditory cue task based on the experiment by Edminston & Lupyan (2015).
-
-Edmiston P, Lupyan G. What makes words special? Words as unmotivated cues. Cognition. 2015;143:93-100. doi:10.1016/j.cognition.2015.06.008
+This folder contains all the code for our pilot study. We recruited 3 participants to see if any bugs or software errors occur and collected feedback to improve the overall design. Moreover, we used this data to write our [analysis script](https://github.com/jmdudek/XP-Lab2020-What-makes-words-special-Group-35/tree/master/Analysis/01_pilot, that we used to analyse the main study.
 
 ## Experiment
 
@@ -18,6 +16,6 @@ This experiment was built using [\_magpie](https://magpie-ea.github.io/magpie-si
 
 ## Running the experiment
 
-1. Online Link: inactive
+1. Online Link: **inactive**
 
 2. Offline: Clone the repository, run `npm install` and open `index.html`.
