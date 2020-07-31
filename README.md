@@ -13,6 +13,12 @@ They should respond (forced binary choice) whether the instance depicted in the 
 
 Our results can be found [here](https://github.com/jmdudek/XP-Lab2020-What-makes-words-special-Group-35/tree/master/Writing/Paper).
 
+## Running the experiment
+
+1. Online Link: [here](https://xp-lab2020-what-makes-words-special-group-35.netlify.app)
+
+2. Offline: Clone the repository, run `npm install` and open `index.html`.
+
 ## Background
 
 We replicate Experiment 1A (Pierce Edmiston, Gary Lupyan 2015). The replication is part of a university project in order to acquire skills in conducting and reporting experiments. Furthermore, the general idea of replicating this study is to ensure that the results of the experiment are reliable and credible. 
