@@ -10,3 +10,5 @@ The experiment uses a 2 (cue type: label, sound) x 2 (match: same, different) x 
 
 Participants view 144 images of different instances of various basic level categories each after hearing either a spoken form or an environmental sound from a certain category.
 They should respond (forced binary choice) whether the instance depicted in the images belong to the same basic level category as the sound they just heard before.
+
+Our results can be found [here]https://github.com/jmdudek/XP-Lab2020-What-makes-words-special-Group-35/tree/master/Writing/Paper 
