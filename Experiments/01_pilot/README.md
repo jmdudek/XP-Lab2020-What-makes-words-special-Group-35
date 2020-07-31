@@ -1,6 +1,6 @@
 # Activation of basic level categories in the human brain based on different cue types. - Pilot Study
 
-This folder contains all the code for our pilot study. We recruited 3 participants to see if any bugs or software errors occur and collected feedback to improve the overall design. Moreover, we used this data to write our [analysis script](https://github.com/jmdudek/XP-Lab2020-What-makes-words-special-Group-35/tree/master/Analysis/01_pilot), that we used to analyse the main study.
+This folder contains all the code for our pilot study. We recruited 3 participants to see if any bugs or software errors occur and collected feedback to improve the overall design. Moreover, we utilized this data to write our [analysis script](https://github.com/jmdudek/XP-Lab2020-What-makes-words-special-Group-35/tree/master/Analysis/01_pilot), that we used to analyse the main study.
 
 ## Experiment
 
