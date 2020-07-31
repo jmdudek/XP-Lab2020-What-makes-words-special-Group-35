@@ -1,8 +1,6 @@
-# Activation of basic level categories in the human brain based on different cue types. 
+# Activation of basic level categories in the human brain based on different cue types. - Main Study
 
-This repository contains an auditory cue task based on the experiment by Edminston & Lupyan (2015).
-
-Edmiston P, Lupyan G. What makes words special? Words as unmotivated cues. Cognition. 2015;143:93-100. doi:10.1016/j.cognition.2015.06.008
+This folder contains all the updated code for our main study. We were able to recruite 35 participants.
 
 ## Experiment
 
